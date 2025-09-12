@@ -19,6 +19,19 @@ onAuthStateChanged(async (user) => {
   const userInfo = userDoc.data();
   currentUserRole = userInfo.role;
   
+  // Role-based access control - redirect members to member dashboard
+  if (userInfo.role === 'member') {
+    window.location.href = "member_dashboard.html";
+    return;
+  }
+  
+  // Only allow admins access to this dashboard
+  if (userInfo.role !== 'admin') {
+    alert('Access denied. Admins only.');
+    auth.signOut();
+    return;
+  }
+  
   document.getElementById('welcome').innerText = `Welcome, ${userInfo.role}: ${userInfo.email}`;
   document.getElementById('logoutBtn').onclick = () => auth.signOut();
   

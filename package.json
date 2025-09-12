@@ -1,12 +1,13 @@
 {
-  "name": "workspace",
+  "name": "digital-agency-pm",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Digital Agency Project Management Tool",
+  "main": "dashboard.html",
   "scripts": {
+    "start": "npx http-server -a 0.0.0.0 -p 5000 --cors -c-1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["project-management", "firebase", "agency"],
   "author": "",
   "license": "ISC",
   "dependencies": {

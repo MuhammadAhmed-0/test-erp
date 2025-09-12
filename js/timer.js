@@ -44,7 +44,12 @@ window.openTimerModal = async function(taskId, taskTitle) {
   }
 }
 
-document.getElementById('closeTimerModal').onclick = async () => {
+// Initialize timer event handlers when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  // Only attach handlers if elements exist (prevents crashes on pages without timer modal)
+  const closeButton = document.getElementById('closeTimerModal');
+  if (closeButton) {
+    closeButton.onclick = async () => {
   // Check if timer is currently running
   if (timerTaskId) {
     const taskDoc = await db.collection('tasks').doc(timerTaskId).get();
@@ -65,9 +70,12 @@ document.getElementById('closeTimerModal').onclick = async () => {
     clearInterval(timerInterval);
     document.getElementById('timerModal').classList.add('hidden');
   }
-};
+    };
+  }
 
-document.getElementById('startTimerBtn').onclick = async () => {
+  const startButton = document.getElementById('startTimerBtn');
+  if (startButton) {
+    startButton.onclick = async () => {
   timerStart = Date.now();
   document.getElementById('startTimerBtn').classList.add('hidden');
   document.getElementById('stopTimerBtn').classList.remove('hidden');
@@ -85,13 +93,16 @@ document.getElementById('startTimerBtn').onclick = async () => {
     document.getElementById('timerDisplay').textContent = formatTime(timerElapsed);
   }, 1000);
   
-  // Refresh task display to show timer is running
-  if (typeof loadTasks === "function") loadTasks();
-};
+      // Refresh task display to show timer is running
+      if (typeof loadTasks === "function") loadTasks();
+    };
+  }
 
-document.getElementById('stopTimerBtn').onclick = async () => {
-  clearInterval(timerInterval);
-  const endTime = Date.now();
+  const stopButton = document.getElementById('stopTimerBtn');
+  if (stopButton) {
+    stopButton.onclick = async () => {
+      clearInterval(timerInterval);
+      const endTime = Date.now();
   
   // Get the actual start time from database to ensure accuracy
   const taskDoc = await db.collection('tasks').doc(timerTaskId).get();
@@ -99,6 +110,20 @@ document.getElementById('stopTimerBtn').onclick = async () => {
   const actualStartTime = taskData.timerStartAt || timerStart;
   const duration = Math.floor((endTime - actualStartTime) / 1000);
   
+  // Create work log entry for progress tracking
+  const workLogData = {
+    userId: auth.currentUser.uid,
+    taskId: timerTaskId,
+    startTime: actualStartTime,
+    endTime: endTime,
+    duration: duration,
+    date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format for easy querying
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  // Add to workLogs collection for progress tracking
+  await db.collection('workLogs').add(workLogData);
+
   // Update task with time log and mark timer as stopped
   await db.collection('tasks').doc(timerTaskId).update({
     timeLogs: firebase.firestore.FieldValue.arrayUnion({
@@ -120,10 +145,12 @@ document.getElementById('stopTimerBtn').onclick = async () => {
   // Update timer display to show final time
   document.getElementById('timerDisplay').textContent = formatTime(duration);
   
-  // Refresh displays
-  if (typeof loadTasks === "function") loadTasks();
-  if (typeof loadDashboardCounts === "function") loadDashboardCounts();
-};
+      // Refresh displays
+      if (typeof loadTasks === "function") loadTasks();
+      if (typeof loadDashboardCounts === "function") loadDashboardCounts();
+    };
+  }
+});
 
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
