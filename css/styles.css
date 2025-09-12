@@ -1,0 +1,30 @@
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f6f8fa;
+  margin: 0;
+}
+.container {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 2em;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+}
+input, select, button {
+  display: block;
+  margin: 1em 0;
+  padding: 0.7em;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+nav {
+  background: #095aba;
+  color: #fff;
+  padding: 1em;
+  display: flex;
+  justify-content: space-between;
+}
+main {
+  padding: 2em;
+}

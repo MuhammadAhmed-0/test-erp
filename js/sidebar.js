@@ -1,0 +1,1 @@
+// This file is no longer needed - navigation is handled inline in dashboard.html

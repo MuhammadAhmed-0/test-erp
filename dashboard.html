@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | Agency PM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+    @keyframes glow {
+      0%, 100% {
+        box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+      }
+    }
+    .slide-in-left {
+      animation: slideInLeft 0.6s ease-out;
+    }
+    .fade-in-up {
+      animation: fadeInUp 0.6s ease-out;
+    }
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    .glow-animation {
+      animation: glow 2s infinite;
+    }
+    .glass-card {
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 8px 32px rgba(60,40,120,0.15), 0 1.5px 6px rgba(0,0,0,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card:hover {
+      box-shadow: 0 20px 60px rgba(60,40,120,0.25), 0 5px 15px rgba(0,0,0,0.12);
+      transform: translateY(-8px) scale(1.02);
+      background: rgba(255,255,255,0.95);
+    }
+    .sidebar-active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+      color: #6366f1;
+      font-weight: 600;
+      border-left: 4px solid #6366f1;
+      padding-left: 16px;
+      margin-left: -16px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin: 4px 0;
+    }
+    .nav-item:hover {
+      background: rgba(99, 102, 241, 0.08);
+      transform: translateX(4px);
+    }
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-purple-100 min-h-screen flex">
+  <!-- Sidebar -->
+  <aside class="hidden md:flex flex-col min-h-screen w-72 bg-white/95 backdrop-blur-lg shadow-2xl border-r border-white/20 slide-in-left">
+    <!-- Logo Section -->
+    <div class="p-8 border-b border-gray-100">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center glow-animation">
+          <i class="fas fa-rocket text-white text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Agency PM</h1>
+          <p class="text-sm text-gray-500">Project Management</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="flex-1 p-6">
+      <div class="space-y-2">
+        <a href="#" class="nav-item sidebar-active" id="navDashboard">
+          <i class="fas fa-home w-5"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" id="navProjects">
+          <i class="fas fa-project-diagram w-5"></i>
+          <span>Projects</span>
+        </a>
+        <a href="#" class="nav-item" id="navTasks">
+          <i class="fas fa-tasks w-5"></i>
+          <span>Tasks</span>
+        </a>
+        <a href="#" class="nav-item" id="navAnalytics">
+          <i class="fas fa-chart-line w-5"></i>
+          <span>Analytics</span>
+        </a>
+        <!-- Admin Only Section -->
+        <div class="border-t border-gray-200 my-4"></div>
+        <a href="#" class="nav-item hidden" id="navAdmin">
+          <i class="fas fa-users-cog w-5"></i>
+          <span>Task Management</span>
+          <span class="ml-auto text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">Admin</span>
+        </a>
+      </div>
+    </nav>
+    
+    <!-- User Profile Section -->
+    <div class="p-6 border-t border-gray-100">
+      <div class="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
+        <div class="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center">
+          <i class="fas fa-user text-white text-sm"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 truncate" id="sidebarUserEmail">Loading...</p>
+          <p class="text-xs text-gray-500" id="sidebarUserRole">User</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col min-h-screen fade-in-up">
+    <!-- Topbar -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white/90 backdrop-blur-lg shadow-lg border-b border-white/20">
+      <div class="flex items-center gap-4">
+        <div class="hidden md:block">
+          <h2 class="text-2xl font-bold text-gray-800" id="welcome">Loading...</h2>
+          <p class="text-sm text-gray-500">Have a productive day!</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-xl">
+          <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span class="text-sm font-medium text-green-700">Online</span>
+        </div>
+        <button id="logoutBtn"
+          class="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl px-6 py-3 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </header>
+    
+    <main class="flex-1 px-6 py-8 md:px-16 space-y-8">
+      <!-- Dashboard Cards -->
+      <div id="dashboardSection">
+        <!-- Welcome Banner -->
+        <div class="glass-card rounded-2xl p-8 mb-8 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-200/30">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-2xl font-bold text-gray-800 mb-2">Welcome to your Dashboard!</h3>
+              <p class="text-gray-600">Track your projects, manage tasks, and boost your team's productivity.</p>
+            </div>
+            <div class="hidden md:flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
+              <i class="fas fa-chart-line text-white text-2xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div class="glass-card rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+            <div class="flex items-center justify-between mb-4">
+              <div class="stat-icon bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
+                <i class="fas fa-project-diagram"></i>
+              </div>
+              <span class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">Total</span>
+            </div>
+            <div class="text-3xl font-extrabold text-gray-800 mb-1" id="projectCount">0</div>
+            <div class="text-sm font-medium text-gray-600">Active Projects</div>
+            <div class="flex items-center mt-2 text-xs text-green-600">
+              <i class="fas fa-arrow-up mr-1"></i>
+              <span>+12% this month</span>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+            <div class="flex items-center justify-between mb-4">
+              <div class="stat-icon bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <i class="fas fa-tasks"></i>
+              </div>
+              <span class="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">Tasks</span>
+            </div>
+            <div class="text-3xl font-extrabold text-gray-800 mb-1" id="taskCount">0</div>
+            <div class="text-sm font-medium text-gray-600">Open Tasks</div>
+            <div class="flex items-center mt-2 text-xs text-green-600">
+              <i class="fas fa-arrow-up mr-1"></i>
+              <span>+8% this week</span>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+            <div class="flex items-center justify-between mb-4">
+              <div class="stat-icon bg-gradient-to-br from-teal-500 to-teal-600 text-white">
+                <i class="fas fa-clock"></i>
+              </div>
+              <span class="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-1 rounded-full">Hours</span>
+            </div>
+            <div class="text-3xl font-extrabold text-gray-800 mb-1" id="timeSpent">00:00:00</div>
+            <div class="text-sm font-medium text-gray-600">Time Tracked</div>
+            <div class="flex items-center mt-2 text-xs text-blue-600">
+              <i class="fas fa-clock mr-1"></i>
+              <span>This month</span>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+            <div class="flex items-center justify-between mb-4">
+              <div class="stat-icon bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+                <i class="fas fa-users"></i>
+              </div>
+              <span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full">Team</span>
+            </div>
+            <div class="text-3xl font-extrabold text-gray-800 mb-1" id="activeUsers">0</div>
+            <div class="text-sm font-medium text-gray-600">Active Members</div>
+            <div class="flex items-center mt-2 text-xs text-green-600">
+              <i class="fas fa-user-plus mr-1"></i>
+              <span>+2 this week</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Projects Section -->
+      <section id="projectsSection" style="display:none;" class="space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">
+              <i class="fas fa-project-diagram text-indigo-600 mr-3"></i>
+              Projects
+            </h2>
+            <p class="text-gray-600">Manage and track your active projects</p>
+          </div>
+          <button id="addProjectBtn"
+            class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 font-semibold">
+            <i class="fas fa-plus"></i>
+            <span>New Project</span>
+          </button>
+        </div>
+        <div id="projectsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </section>
+
+      <!-- Tasks Section -->
+      <section id="tasksSection" style="display:none;" class="space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">
+              <i class="fas fa-tasks text-purple-600 mr-3"></i>
+              Tasks
+            </h2>
+            <p class="text-gray-600">Track progress and manage your team's workload</p>
+          </div>
+          <button id="addTaskBtn"
+            class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 font-semibold">
+            <i class="fas fa-plus"></i>
+            <span>New Task</span>
+          </button>
+        </div>
+        <div id="tasksList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </section>
+
+      <!-- Analytics Section -->
+      <section id="analyticsSection" style="display:none;" class="space-y-6">
+        <div class="mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-chart-line text-teal-600 mr-3"></i>
+            Analytics
+          </h2>
+          <p class="text-gray-600">Insights and performance metrics for your projects</p>
+        </div>
+        
+        <!-- Analytics Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div class="glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                <i class="fas fa-check-circle text-white"></i>
+              </div>
+              <span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">Completed</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 mb-1" id="completedTasks">0</div>
+            <div class="text-sm text-gray-600">Tasks Completed</div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+              </div>
+              <span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full">Overdue</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 mb-1" id="overdueTasks">0</div>
+            <div class="text-sm text-gray-600">Overdue Tasks</div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
+                <i class="fas fa-clock text-white"></i>
+              </div>
+              <span class="text-xs font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">Pending</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 mb-1" id="pendingTasks">0</div>
+            <div class="text-sm text-gray-600">Pending Tasks</div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-chart-line text-white"></i>
+              </div>
+              <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Avg</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 mb-1" id="avgTaskTime">00:00:00</div>
+            <div class="text-sm text-gray-600">Avg Task Time</div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-trophy text-white"></i>
+              </div>
+              <span class="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">Score</span>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 mb-1" id="productivityScore">0%</div>
+            <div class="text-sm text-gray-600">Productivity Score</div>
+          </div>
+        </div>
+
+        <!-- Charts and Detailed Analytics -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <!-- Project Status Chart -->
+          <div class="glass-card rounded-2xl p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <i class="fas fa-chart-pie text-indigo-600"></i>
+              Project Status Distribution
+            </h3>
+            <div id="projectStatusChart" class="h-64 flex items-center justify-center">
+              <div class="text-center">
+                <div class="grid grid-cols-2 gap-4 w-full">
+                  <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <span class="text-2xl font-bold text-green-600" id="activeProjectsCount">0</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Active</p>
+                  </div>
+                  <div class="text-center">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <span class="text-2xl font-bold text-gray-600" id="completedProjectsCount">0</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Completed</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Team Performance -->
+          <div class="glass-card rounded-2xl p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <i class="fas fa-users text-purple-600"></i>
+              Team Performance
+            </h3>
+            <div id="teamPerformance" class="space-y-4">
+              <!-- Team member performance will be populated here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <i class="fas fa-clock text-teal-600"></i>
+            Recent Activity
+          </h3>
+          <div id="recentActivity" class="space-y-4">
+            <!-- Recent activity will be populated here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Task Management Section -->
+      <section id="adminSection" style="display:none;" class="space-y-6">
+        <div class="mb-8">
+          <h2 class="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+            <i class="fas fa-users-cog text-red-600"></i>
+            Admin Task Management
+            <span class="text-sm bg-red-100 text-red-600 px-3 py-1 rounded-full font-medium">Admin Only</span>
+          </h2>
+          <p class="text-gray-600">Comprehensive task oversight, team management, and performance analytics</p>
+        </div>
+
+        <!-- Filter Panel -->
+        <div class="glass-card rounded-2xl p-6 mb-8">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-filter text-blue-600"></i>
+            Advanced Filters & Search
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-4">
+            <!-- Search Bar -->
+            <div class="col-span-1 md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Search Tasks</label>
+              <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="adminSearchInput" placeholder="Search by title, description..." 
+                       class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-300 focus:border-transparent">
+              </div>
+            </div>
+            
+            <!-- Person Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+              <select id="adminPersonFilter" class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-300">
+                <option value="">All Members</option>
+              </select>
+            </div>
+            
+            <!-- Status Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select id="adminStatusFilter" class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-300">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+            
+            <!-- Priority Filter -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+              <select id="adminPriorityFilter" class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-300">
+                <option value="">All Priority</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            
+            <!-- Date Range -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <select id="adminDateFilter" class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-300">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Custom Date Range (Hidden by default) -->
+          <div id="customDateRange" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+              <input type="date" id="adminFromDate" class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-300">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+              <input type="date" id="adminToDate" class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-300">
+            </div>
+          </div>
+          
+          <!-- Filter Actions -->
+          <div class="flex items-center gap-3 mt-4">
+            <button id="applyFilters" class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2">
+              <i class="fas fa-search"></i>
+              Apply Filters
+            </button>
+            <button id="clearFilters" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors flex items-center gap-2">
+              <i class="fas fa-times"></i>
+              Clear All
+            </button>
+            <div class="ml-auto flex items-center gap-3">
+              <span id="resultsCount" class="text-sm text-gray-600">Loading tasks...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bulk Actions Panel -->
+        <div id="bulkActionsPanel" class="hidden glass-card rounded-2xl p-4 mb-6 bg-blue-50 border border-blue-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span id="selectedCount" class="font-medium text-blue-800">0 tasks selected</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="bulkStatusChange" class="px-3 py-2 border border-blue-300 rounded-lg text-sm">
+                <option value="">Change Status...</option>
+                <option value="active">Set to Active</option>
+                <option value="in-progress">Set to In Progress</option>
+                <option value="completed">Set to Completed</option>
+                <option value="pending">Set to Pending</option>
+              </select>
+              <button id="exportSelected" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center gap-1">
+                <i class="fas fa-download"></i>
+                Export
+              </button>
+              <button id="deleteSelected" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-1">
+                <i class="fas fa-trash"></i>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Task Table -->
+        <div class="glass-card rounded-2xl overflow-hidden">
+          <div class="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-table text-purple-600"></i>
+                Task Overview Table
+              </h3>
+              <div class="flex items-center gap-3">
+                <button id="refreshTasks" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm flex items-center gap-2">
+                  <i class="fas fa-sync-alt"></i>
+                  Refresh
+                </button>
+                <button id="exportAll" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm flex items-center gap-2">
+                  <i class="fas fa-file-excel"></i>
+                  Export All
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full" id="adminTaskTable">
+              <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th class="px-4 py-4 text-left">
+                    <input type="checkbox" id="selectAll" class="rounded">
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" data-sort="title">
+                    Task Title <i class="fas fa-sort ml-1 text-gray-400"></i>
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" data-sort="assignedTo">
+                    Assigned To <i class="fas fa-sort ml-1 text-gray-400"></i>
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" data-sort="status">
+                    Status <i class="fas fa-sort ml-1 text-gray-400"></i>
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" data-sort="priority">
+                    Priority <i class="fas fa-sort ml-1 text-gray-400"></i>
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" data-sort="createdAt">
+                    Created <i class="fas fa-sort ml-1 text-gray-400"></i>
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" data-sort="deadline">
+                    Due Date <i class="fas fa-sort ml-1 text-gray-400"></i>
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100" data-sort="totalTime">
+                    Time Spent <i class="fas fa-sort ml-1 text-gray-400"></i>
+                  </th>
+                  <th class="px-4 py-4 text-left font-medium text-gray-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="adminTaskTableBody" class="divide-y divide-gray-200">
+                <!-- Table rows will be populated here -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Loading State -->
+          <div id="tableLoading" class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-4"></i>
+            <p class="text-gray-600">Loading task data...</p>
+          </div>
+          
+          <!-- Empty State -->
+          <div id="tableEmpty" class="hidden text-center py-12">
+            <i class="fas fa-clipboard-list text-gray-400 text-4xl mb-4"></i>
+            <p class="text-gray-600 text-lg">No tasks found matching your criteria</p>
+            <p class="text-gray-500 text-sm">Try adjusting your filters or create a new task</p>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-8">
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <i class="fas fa-tasks text-blue-600"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800" id="adminTotalTasks">0</div>
+            <div class="text-sm text-gray-600">Total Tasks</div>
+          </div>
+          
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <i class="fas fa-check-circle text-green-600"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800" id="adminCompletedTasks">0</div>
+            <div class="text-sm text-gray-600">Completed</div>
+          </div>
+          
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800" id="adminOverdueTasks">0</div>
+            <div class="text-sm text-gray-600">Overdue</div>
+          </div>
+          
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <i class="fas fa-clock text-yellow-600"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800" id="adminPendingTasks">0</div>
+            <div class="text-sm text-gray-600">Pending</div>
+          </div>
+          
+          <div class="glass-card rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <i class="fas fa-clock text-purple-600"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800" id="adminTotalTime">00:00:00</div>
+            <div class="text-sm text-gray-600">Total Time</div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- Project Modal -->
+    <div id="projectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+      <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-lg p-8 m-4 border border-white/20 transform transition-all duration-300">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-project-diagram text-white"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800" id="projectModalTitle">Create New Project</h3>
+        </div>
+        
+        <form id="projectForm" class="space-y-6">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <i class="fas fa-tag text-gray-400"></i>
+            </div>
+            <input 
+              type="text" 
+              id="projectName" 
+              placeholder="Enter project name" 
+              required 
+              class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all duration-200" 
+            />
+          </div>
+          
+          <div class="relative">
+            <div class="absolute top-4 left-0 pl-4 flex items-start pointer-events-none">
+              <i class="fas fa-align-left text-gray-400"></i>
+            </div>
+            <textarea 
+              id="projectDesc" 
+              placeholder="Project description and goals" 
+              required 
+              rows="4"
+              class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all duration-200 resize-none"
+            ></textarea>
+          </div>
+          
+          <div class="flex gap-3">
+            <button 
+              type="submit" 
+              class="flex-1 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+            >
+              <i class="fas fa-plus mr-2"></i>
+              Create Project
+            </button>
+            <button 
+              type="button" 
+              id="closeProjectModal" 
+              class="px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+      <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-lg p-8 m-4 border border-white/20 transform transition-all duration-300">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-tasks text-white"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800" id="taskModalTitle">Create New Task</h3>
+        </div>
+        
+        <form id="taskForm" class="space-y-6">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <i class="fas fa-clipboard text-gray-400"></i>
+            </div>
+            <input 
+              type="text" 
+              id="taskName" 
+              placeholder="Enter task title" 
+              required 
+              class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200" 
+            />
+          </div>
+          
+          <div class="relative">
+            <div class="absolute top-4 left-0 pl-4 flex items-start pointer-events-none">
+              <i class="fas fa-align-left text-gray-400"></i>
+            </div>
+            <textarea 
+              id="taskDesc" 
+              placeholder="Task description and requirements" 
+              required 
+              rows="3"
+              class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200 resize-none"
+            ></textarea>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-calendar text-gray-400"></i>
+              </div>
+              <input 
+                type="date" 
+                id="taskDeadline" 
+                required 
+                class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-project-diagram text-gray-400"></i>
+              </div>
+              <select 
+                id="taskProject" 
+                required 
+                class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200 appearance-none"
+              >
+                <option value="">Select Project</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <i class="fas fa-user text-gray-400"></i>
+            </div>
+            <select 
+              id="taskAssignee" 
+              required 
+              class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200 appearance-none"
+            >
+              <option value="">Assign to</option>
+            </select>
+          </div>
+          
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <i class="fas fa-exclamation-circle text-gray-400"></i>
+            </div>
+            <select 
+              id="taskPriority" 
+              class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200 appearance-none"
+            >
+              <option value="">Select Priority</option>
+              <option value="low">Low Priority</option>
+              <option value="medium">Medium Priority</option>
+              <option value="high">High Priority</option>
+              <option value="critical">Critical Priority</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+              <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
+          </div>
+          
+          <div class="flex gap-3">
+            <button 
+              type="submit" 
+              class="flex-1 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+            >
+              <i class="fas fa-plus mr-2"></i>
+              Create Task
+            </button>
+            <button 
+              type="button" 
+              id="closeTaskModal" 
+              class="px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Timer Modal -->
+    <div id="timerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+      <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-md p-8 m-4 border border-white/20 text-center transform transition-all duration-300">
+        <div class="mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-teal-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-stopwatch text-white text-2xl"></i>
+          </div>
+          <h3 id="timerTaskTitle" class="text-xl font-bold text-gray-800 mb-2">Task Timer</h3>
+          <p class="text-gray-600 text-sm">Track your time efficiently</p>
+        </div>
+        
+        <div id="timerDisplay" class="text-6xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent mb-6 font-mono">00:00:00</div>
+        
+        <!-- Task Status Controls (only visible when timer is stopped) -->
+        <div id="statusControls" class="hidden mb-6">
+          <p class="text-sm text-gray-600 mb-3">Update task status after completing work:</p>
+          <div class="flex gap-2 justify-center flex-wrap">
+            <button onclick="updateTaskStatus('active')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-play-circle mr-1"></i> Active
+            </button>
+            <button onclick="updateTaskStatus('in-progress')" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-clock mr-1"></i> In Progress
+            </button>
+            <button onclick="updateTaskStatus('completed')" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-check-circle mr-1"></i> Completed
+            </button>
+            <button onclick="updateTaskStatus('pending')" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-pause-circle mr-1"></i> Pending
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex gap-3 justify-center">
+          <button 
+            id="startTimerBtn" 
+            class="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+          >
+            <i class="fas fa-play"></i>
+            Start
+          </button>
+          <button 
+            id="stopTimerBtn" 
+            class="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 hidden"
+          >
+            <i class="fas fa-stop"></i>
+            Stop
+          </button>
+          <button 
+            id="closeTimerModal" 
+            class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold transition-all duration-200"
+          >
+            <i class="fas fa-times"></i>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyB2M-i2mYsrquyqSj7e_8CuEqrv94CE_Hs",
+        authDomain: "erp-e-33e34.firebaseapp.com",
+        projectId: "erp-e-33e34",
+        storageBucket: "erp-e-33e34.firebasestorage.app",
+        messagingSenderId: "91382577611",
+        appId: "1:91382577611:web:73a2c2aef061820cd89e4e",
+        measurementId: "G-ZYG3N43LBL"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+      
+      // Global time formatting function
+      function formatTimeDisplay(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+
+      // Sidebar navigation logic
+      function showSection(sectionId) {
+        document.getElementById('dashboardSection').style.display = sectionId === 'dashboardSection' ? 'block' : 'none';
+        document.getElementById('projectsSection').style.display = sectionId === 'projectsSection' ? 'block' : 'none';
+        document.getElementById('tasksSection').style.display = sectionId === 'tasksSection' ? 'block' : 'none';
+        document.getElementById('analyticsSection').style.display = sectionId === 'analyticsSection' ? 'block' : 'none';
+        document.getElementById('adminSection').style.display = sectionId === 'adminSection' ? 'block' : 'none';
+        
+        // Update navigation active states
+        document.querySelectorAll('.nav-item').forEach(a => a.classList.remove("sidebar-active"));
+        if (sectionId === "dashboardSection") document.getElementById("navDashboard").classList.add("sidebar-active");
+        if (sectionId === "projectsSection") document.getElementById("navProjects").classList.add("sidebar-active");
+        if (sectionId === "tasksSection") document.getElementById("navTasks").classList.add("sidebar-active");
+        if (sectionId === "analyticsSection") document.getElementById("navAnalytics").classList.add("sidebar-active");
+        if (sectionId === "adminSection") document.getElementById("navAdmin").classList.add("sidebar-active");
+        
+        // Load admin data when admin section is shown
+        if (sectionId === "adminSection") {
+          loadAdminTasks();
+        }
+      }
+      document.getElementById("navDashboard").onclick = e => { e.preventDefault(); showSection("dashboardSection"); };
+      document.getElementById("navProjects").onclick = e => { e.preventDefault(); showSection("projectsSection"); };
+      document.getElementById("navTasks").onclick = e => { e.preventDefault(); showSection("tasksSection"); };
+      document.getElementById("navAnalytics").onclick = e => { e.preventDefault(); showSection("analyticsSection"); };
+      document.getElementById("navAdmin").onclick = e => { e.preventDefault(); showSection("adminSection"); };
+
+      // Auth and dashboard
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) { window.location.href = "login.html"; return; }
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const userInfo = userDoc.data();
+        
+        // Update header welcome message
+        document.getElementById('welcome').innerHTML = `
+          <span>Welcome back, <strong>${userInfo.email}</strong></span>
+        `;
+        
+        // Update sidebar user info
+        document.getElementById('sidebarUserEmail').textContent = userInfo.email;
+        document.getElementById('sidebarUserRole').textContent = userInfo.role === 'admin' ? 'Administrator' : 'Team Member';
+        
+        // Setup logout functionality
+        document.getElementById('logoutBtn').onclick = () => auth.signOut();
+        
+        // Show/hide admin section based on user role
+        if (userInfo.role === 'admin') {
+          document.getElementById('navAdmin').classList.remove('hidden');
+        } else {
+          document.getElementById('navAdmin').classList.add('hidden');
+        }
+        
+        // Load dashboard data
+        loadDashboardCounts();
+        loadProjects();
+        loadTasks();
+        loadAnalytics();
+        
+        // Show dashboard by default
+        showSection("dashboardSection");
+      });
+
+      async function loadDashboardCounts() {
+        const projectsSnap = await db.collection('projects').get();
+        document.getElementById('projectCount').textContent = projectsSnap.size;
+        const tasksSnap = await db.collection('tasks').get();
+        document.getElementById('taskCount').textContent = tasksSnap.size;
+        let totalTime = 0;
+        let usersSet = new Set();
+        tasksSnap.forEach(doc => {
+          const t = doc.data();
+          if (t.totalTime) totalTime += t.totalTime;
+          if (t.assignedTo) usersSet.add(t.assignedTo);
+        });
+        document.getElementById('timeSpent').textContent = formatTimeDisplay(totalTime);
+        document.getElementById('activeUsers').textContent = usersSet.size;
+      }
+
+      // Projects modal logic
+      const projectModal = document.getElementById('projectModal');
+      let currentEditingProjectId = null;
+      
+      document.getElementById('addProjectBtn').onclick = () => { 
+        currentEditingProjectId = null;
+        document.getElementById('projectModalTitle').textContent = 'Create New Project';
+        document.getElementById('projectName').value = '';
+        document.getElementById('projectDesc').value = '';
+        projectModal.classList.remove('hidden'); 
+      };
+      
+      document.getElementById('closeProjectModal').onclick = () => { 
+        projectModal.classList.add('hidden'); 
+        currentEditingProjectId = null;
+      };
+      
+      projectModal.onclick = (e) => { 
+        if (e.target === projectModal) {
+          projectModal.classList.add('hidden'); 
+          currentEditingProjectId = null;
+        }
+      };
+
+      document.getElementById('projectForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('projectName').value;
+        const desc = document.getElementById('projectDesc').value;
+        
+        if (currentEditingProjectId) {
+          // Update existing project
+          await db.collection('projects').doc(currentEditingProjectId).update({
+            name,
+            desc,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } else {
+          // Create new project
+          await db.collection('projects').add({
+            name, desc,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            members: [],
+            status: 'active',
+          });
+        }
+        
+        projectModal.classList.add('hidden');
+        currentEditingProjectId = null;
+        loadProjects();
+        loadDashboardCounts();
+      };
+
+      // Function to edit project
+      window.editProject = async function(projectId) {
+        try {
+          const projectDoc = await db.collection('projects').doc(projectId).get();
+          if (projectDoc.exists) {
+            const projectData = projectDoc.data();
+            currentEditingProjectId = projectId;
+            document.getElementById('projectModalTitle').textContent = 'Edit Project';
+            document.getElementById('projectName').value = projectData.name;
+            document.getElementById('projectDesc').value = projectData.desc;
+            projectModal.classList.remove('hidden');
+          }
+        } catch (error) {
+          console.error('Error editing project:', error);
+          alert('Error loading project data');
+        }
+      };
+
+      async function loadProjects() {
+        const list = document.getElementById('projectsList');
+        list.innerHTML = '';
+        const snap = await db.collection('projects').orderBy('createdAt', 'desc').get();
+        if (snap.empty) {
+          list.innerHTML = '<div class="text-gray-500 text-center py-4 col-span-3">No projects yet.</div>';
+          return;
+        }
+        snap.forEach(doc => {
+          const p = doc.data();
+          const card = document.createElement('div');
+          card.className = "glass-card rounded-2xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]";
+          card.innerHTML = `
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <i class="fas fa-project-diagram text-white"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold text-gray-800">${p.name}</h3>
+                  <span class="text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 font-medium">${p.status}</span>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4 line-clamp-2">${p.desc}</p>
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <i class="fas fa-clock"></i>
+                <span>Created ${new Date(p.createdAt?.toDate()).toLocaleDateString()}</span>
+              </div>
+              <div class="flex gap-2">
+                <button class="flex items-center gap-1 text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200" onclick="editProject('${doc.id}')">
+                  <i class="fas fa-edit"></i>
+                  Edit
+                </button>
+                <button class="flex items-center gap-1 text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200" onclick="deleteProject('${doc.id}')">
+                  <i class="fas fa-trash"></i>
+                  Delete
+                </button>
+              </div>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+      async function deleteProject(id) {
+        if (confirm("Delete this project?")) {
+          await db.collection('projects').doc(id).delete();
+          loadProjects();
+          loadDashboardCounts();
+        }
+      }
+
+      // Tasks modal logic
+      const taskModal = document.getElementById('taskModal');
+      let currentEditingTaskId = null;
+      
+      document.getElementById('addTaskBtn').onclick = () => { 
+        currentEditingTaskId = null;
+        document.getElementById('taskModalTitle').textContent = 'Create New Task';
+        document.getElementById('taskName').value = '';
+        document.getElementById('taskDesc').value = '';
+        document.getElementById('taskDeadline').value = '';
+        taskModal.classList.remove('hidden'); 
+        populateTaskModal(); 
+      };
+      
+      document.getElementById('closeTaskModal').onclick = () => { 
+        taskModal.classList.add('hidden'); 
+        currentEditingTaskId = null;
+      };
+      
+      taskModal.onclick = (e) => { 
+        if (e.target === taskModal) {
+          taskModal.classList.add('hidden'); 
+          currentEditingTaskId = null;
+        }
+      };
+
+      document.getElementById('taskForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('taskName').value;
+        const desc = document.getElementById('taskDesc').value;
+        const deadline = document.getElementById('taskDeadline').value;
+        const projectId = document.getElementById('taskProject').value;
+        const assignedTo = document.getElementById('taskAssignee').value;
+        const priority = document.getElementById('taskPriority').value;
+        
+        if (currentEditingTaskId) {
+          // Update existing task
+          await db.collection('tasks').doc(currentEditingTaskId).update({
+            title,
+            desc,
+            deadline,
+            projectId,
+            assignedTo,
+            priority,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } else {
+          // Create new task
+          await db.collection('tasks').add({
+            title, desc, deadline, projectId, assignedTo, priority,
+            status: 'active',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            timeLogs: [],
+            totalTime: 0,
+          });
+        }
+        
+        taskModal.classList.add('hidden');
+        currentEditingTaskId = null;
+        loadTasks();
+        loadDashboardCounts();
+      };
+
+      // Function to edit task
+      window.editTask = async function(taskId) {
+        try {
+          const taskDoc = await db.collection('tasks').doc(taskId).get();
+          if (taskDoc.exists) {
+            const taskData = taskDoc.data();
+            currentEditingTaskId = taskId;
+            document.getElementById('taskModalTitle').textContent = 'Edit Task';
+            document.getElementById('taskName').value = taskData.title;
+            document.getElementById('taskDesc').value = taskData.desc;
+            document.getElementById('taskDeadline').value = taskData.deadline;
+            
+            // Populate dropdowns first, then set selected values
+            await populateTaskModal();
+            document.getElementById('taskProject').value = taskData.projectId;
+            document.getElementById('taskAssignee').value = taskData.assignedTo;
+            document.getElementById('taskPriority').value = taskData.priority || '';
+            
+            taskModal.classList.remove('hidden');
+          }
+        } catch (error) {
+          console.error('Error editing task:', error);
+          alert('Error loading task data');
+        }
+      };
+
+      async function loadTasks() {
+        const list = document.getElementById('tasksList');
+        list.innerHTML = '';
+        const snap = await db.collection('tasks').orderBy('createdAt', 'desc').get();
+        if (snap.empty) {
+          list.innerHTML = '<div class="text-gray-500 text-center py-4 col-span-3">No tasks yet.</div>';
+          return;
+        }
+        snap.forEach(doc => {
+          const t = doc.data();
+          const card = document.createElement('div');
+          card.className = "glass-card rounded-2xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]";
+          const deadlineDate = new Date(t.deadline);
+          const isOverdue = deadlineDate < new Date();
+          card.innerHTML = `
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <i class="fas fa-tasks text-white"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold text-gray-800">${t.title}</h3>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">${t.status}</span>
+                    ${(t.priority && t.priority.trim()) ? `<span class="text-xs px-2 py-1 rounded-full border font-medium ${getPriorityColor(t.priority)}">${t.priority.charAt(0).toUpperCase() + t.priority.slice(1)}</span>` : `<span class="text-xs px-2 py-1 rounded-full border font-medium ${getPriorityColor('medium')}">Medium</span>`}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4 line-clamp-2">${t.desc}</p>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="flex items-center gap-2 text-sm">
+                <i class="fas fa-calendar text-gray-400"></i>
+                <span class="${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}">
+                  ${deadlineDate.toLocaleDateString()}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 text-sm">
+                <i class="fas fa-clock text-gray-400"></i>
+                <span class="text-teal-600 font-medium">${formatTimeDisplay(t.totalTime || 0)}</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div class="flex gap-2">
+                <button class="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200" onclick="openTimerModal('${doc.id}', '${t.title}')">
+                  <i class="fas fa-play"></i>
+                  Timer
+                </button>
+                <button class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200" onclick="openStatusModal('${doc.id}', '${t.status}')">
+                  <i class="fas fa-edit"></i>
+                  Status
+                </button>
+              </div>
+              <div class="flex gap-1">
+                <button class="flex items-center gap-1 text-purple-600 hover:bg-purple-50 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200" onclick="editTask('${doc.id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="flex items-center gap-1 text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200" onclick="deleteTask('${doc.id}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+      async function deleteTask(id) {
+        if (confirm("Delete this task?")) {
+          await db.collection('tasks').doc(id).delete();
+          loadTasks();
+          loadDashboardCounts();
+        }
+      }
+      async function populateTaskModal() {
+        try {
+          // Projects dropdown
+          const projectSel = document.getElementById('taskProject');
+          projectSel.innerHTML = '<option value="">Select Project</option>';
+          
+          const projects = await db.collection('projects').get();
+          if (projects.empty) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No projects available - Create a project first';
+            projectSel.appendChild(opt);
+          } else {
+            projects.forEach(doc => {
+              const p = doc.data();
+              const opt = document.createElement('option');
+              opt.value = doc.id;
+              opt.textContent = p.name;
+              projectSel.appendChild(opt);
+            });
+          }
+
+          // Assignees dropdown
+          const assigneeSel = document.getElementById('taskAssignee');
+          assigneeSel.innerHTML = '<option value="">Assign to</option>';
+          
+          // Add current user first (admin can assign to themselves)
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const currentUserDoc = await db.collection('users').doc(currentUser.uid).get();
+            if (currentUserDoc.exists) {
+              const currentUserData = currentUserDoc.data();
+              const opt = document.createElement('option');
+              opt.value = currentUser.uid;
+              opt.textContent = `${currentUserData.email} (Me - ${currentUserData.role === 'admin' ? 'Admin' : 'Member'})`;
+              assigneeSel.appendChild(opt);
+            }
+          }
+          
+          // Add all other users
+          const users = await db.collection('users').get();
+          if (!users.empty) {
+            users.forEach(doc => {
+              // Skip current user since we already added them
+              if (doc.id !== currentUser?.uid) {
+                const u = doc.data();
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.textContent = `${u.email} (${u.role === 'admin' ? 'Admin' : 'Team Member'})`;
+                assigneeSel.appendChild(opt);
+              }
+            });
+          } else {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No team members found';
+            assigneeSel.appendChild(opt);
+          }
+        } catch (error) {
+          console.error('Error populating task modal:', error);
+          // Fallback options
+          document.getElementById('taskProject').innerHTML = '<option value="">Error loading projects</option>';
+          document.getElementById('taskAssignee').innerHTML = '<option value="">Error loading users</option>';
+        }
+      }
+
+      // Timer modal logic
+      // Status update function for separate status button
+      window.openStatusModal = async function(taskId, currentStatus) {
+        const statusModal = document.getElementById('statusModal');
+        statusModal.classList.remove('hidden');
+        statusModal.dataset.taskId = taskId;
+        // Highlight current status
+        document.querySelectorAll('#statusModal .status-btn').forEach(btn => {
+          btn.classList.remove('ring-2', 'ring-offset-2');
+          if (btn.dataset.status === currentStatus) {
+            btn.classList.add('ring-2', 'ring-offset-2', 'ring-blue-500');
+          }
+        });
+      }
+
+      window.updateTaskStatusDirect = async function(newStatus) {
+        const statusModal = document.getElementById('statusModal');
+        const taskId = statusModal.dataset.taskId;
+        
+        try {
+          await db.collection('tasks').doc(taskId).update({
+            status: newStatus
+          });
+          
+          statusModal.classList.add('hidden');
+          loadTasks();
+          loadDashboardCounts();
+          
+          console.log(`Task status updated to: ${newStatus}`);
+        } catch (error) {
+          alert(`Error updating task status: ${error.message}`);
+        }
+      }
+
+      // Priority color function
+      function getPriorityColor(priority) {
+        const colors = {
+          'critical': 'bg-red-100 text-red-700 border-red-200',
+          'high': 'bg-orange-100 text-orange-700 border-orange-200', 
+          'medium': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+          'low': 'bg-green-100 text-green-700 border-green-200'
+        };
+        return colors[priority] || 'bg-gray-100 text-gray-700 border-gray-200';
+      }
+
+      // Analytics functionality
+      async function loadAnalytics() {
+        try {
+          const [projectsSnap, tasksSnap, usersSnap] = await Promise.all([
+            db.collection('projects').get(),
+            db.collection('tasks').get(),
+            db.collection('users').get()
+          ]);
+
+          // Basic counts
+          const projects = projectsSnap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+          const tasks = tasksSnap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+          const users = usersSnap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+
+          // Calculate analytics metrics
+          const completedTasks = tasks.filter(t => t.status === 'completed').length;
+          const overdueTasks = tasks.filter(t => {
+            const deadline = new Date(t.deadline);
+            return deadline < new Date() && t.status !== 'completed';
+          }).length;
+
+          // Calculate average task time
+          const tasksWithTime = tasks.filter(t => t.totalTime > 0);
+          const avgTaskTime = tasksWithTime.length > 0 
+            ? tasksWithTime.reduce((sum, t) => sum + t.totalTime, 0) / tasksWithTime.length / 3600
+            : 0;
+
+          // Project status distribution
+          const activeProjects = projects.filter(p => p.status === 'active').length;
+          const completedProjects = projects.filter(p => p.status === 'completed').length;
+
+          // Productivity score calculation
+          const totalTasks = tasks.length;
+          const productivity = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+          // Update analytics UI
+          document.getElementById('completedTasks').textContent = completedTasks;
+          document.getElementById('overdueTasks').textContent = overdueTasks;
+          document.getElementById('avgTaskTime').textContent = formatTimeDisplay(Math.floor(avgTaskTime * 3600));
+          document.getElementById('productivityScore').textContent = `${productivity}%`;
+          document.getElementById('activeProjectsCount').textContent = activeProjects;
+          document.getElementById('completedProjectsCount').textContent = completedProjects;
+
+          // Load team performance
+          loadTeamPerformance(tasks, users);
+          
+          // Load recent activity
+          loadRecentActivity(tasks, projects);
+
+        } catch (error) {
+          console.error('Error loading analytics:', error);
+        }
+      }
+
+      async function loadTeamPerformance(tasks, users) {
+        const teamPerformanceDiv = document.getElementById('teamPerformance');
+        teamPerformanceDiv.innerHTML = '';
+
+        if (users.length === 0) {
+          teamPerformanceDiv.innerHTML = '<p class="text-gray-500 text-center py-4">No team members found</p>';
+          return;
+        }
+
+        const userPerformance = users.map(user => {
+          const userTasks = tasks.filter(t => t.assignedTo === user.id);
+          const completedTasks = userTasks.filter(t => t.status === 'completed').length;
+          const totalTime = userTasks.reduce((sum, t) => sum + (t.totalTime || 0), 0);
+          const completionRate = userTasks.length > 0 ? (completedTasks / userTasks.length) * 100 : 0;
+
+          return {
+            ...user,
+            totalTasks: userTasks.length,
+            completedTasks,
+            totalTime,
+            completionRate
+          };
+        });
+
+        // Sort by completion rate
+        userPerformance.sort((a, b) => b.completionRate - a.completionRate);
+
+        userPerformance.forEach(user => {
+          const userCard = document.createElement('div');
+          userCard.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-xl';
+          userCard.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                <span class="text-white font-semibold text-sm">${user.email.charAt(0).toUpperCase()}</span>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800">${user.email}</p>
+                <p class="text-xs text-gray-500">${user.role === 'admin' ? 'Administrator' : 'Team Member'}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="flex items-center gap-4 text-sm">
+                <div class="text-center">
+                  <p class="font-bold text-gray-800">${user.totalTasks}</p>
+                  <p class="text-xs text-gray-500">Tasks</p>
+                </div>
+                <div class="text-center">
+                  <p class="font-bold text-green-600">${Math.round(user.completionRate)}%</p>
+                  <p class="text-xs text-gray-500">Complete</p>
+                </div>
+                <div class="text-center">
+                  <p class="font-bold text-blue-600">${formatTimeDisplay(user.totalTime || 0)}</p>
+                  <p class="text-xs text-gray-500">Time</p>
+                </div>
+              </div>
+            </div>
+          `;
+          teamPerformanceDiv.appendChild(userCard);
+        });
+      }
+
+      async function loadRecentActivity(tasks, projects) {
+        const recentActivityDiv = document.getElementById('recentActivity');
+        recentActivityDiv.innerHTML = '';
+
+        // Get recent tasks (sorted by creation date)
+        const recentTasks = tasks
+          .filter(t => t.createdAt)
+          .sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate())
+          .slice(0, 5);
+
+        // Get recent projects
+        const recentProjects = projects
+          .filter(p => p.createdAt)
+          .sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate())
+          .slice(0, 3);
+
+        const activities = [];
+
+        // Add recent tasks
+        recentTasks.forEach(task => {
+          activities.push({
+            type: 'task',
+            icon: 'fas fa-tasks',
+            color: 'text-purple-600',
+            bgColor: 'bg-purple-50',
+            title: `Task "${task.title}" created`,
+            time: task.createdAt.toDate(),
+            description: `Assigned to team member`
+          });
+        });
+
+        // Add recent projects
+        recentProjects.forEach(project => {
+          activities.push({
+            type: 'project',
+            icon: 'fas fa-project-diagram',
+            color: 'text-indigo-600',
+            bgColor: 'bg-indigo-50',
+            title: `Project "${project.name}" created`,
+            time: project.createdAt.toDate(),
+            description: project.desc.substring(0, 50) + '...'
+          });
+        });
+
+        // Sort all activities by time
+        activities.sort((a, b) => b.time - a.time);
+
+        if (activities.length === 0) {
+          recentActivityDiv.innerHTML = '<p class="text-gray-500 text-center py-4">No recent activity</p>';
+          return;
+        }
+
+        activities.slice(0, 8).forEach(activity => {
+          const activityItem = document.createElement('div');
+          activityItem.className = 'flex items-start gap-4 p-4 bg-gray-50 rounded-xl';
+          activityItem.innerHTML = `
+            <div class="w-10 h-10 ${activity.bgColor} rounded-xl flex items-center justify-center flex-shrink-0">
+              <i class="${activity.icon} ${activity.color}"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-gray-800">${activity.title}</p>
+              <p class="text-sm text-gray-600 mt-1">${activity.description}</p>
+              <p class="text-xs text-gray-500 mt-2">${activity.time.toLocaleDateString()} at ${activity.time.toLocaleTimeString()}</p>
+            </div>
+          `;
+          recentActivityDiv.appendChild(activityItem);
+        });
+      }
+
+      // ============================
+      // ADMIN TASK MANAGEMENT MODULE
+      // ============================
+      
+      let adminTasks = [];
+      let filteredTasks = [];
+      let currentSort = { field: 'createdAt', order: 'desc' };
+      let selectedTasks = new Set();
+
+      // Load all tasks for admin view
+      async function loadAdminTasks() {
+        try {
+          document.getElementById('tableLoading').style.display = 'block';
+          document.getElementById('tableEmpty').style.display = 'none';
+          
+          const [tasksSnap, usersSnap] = await Promise.all([
+            db.collection('tasks').get(),
+            db.collection('users').get()
+          ]);
+          
+          // Create user lookup
+          const users = {};
+          usersSnap.forEach(doc => {
+            users[doc.id] = doc.data();
+          });
+          
+          // Process tasks
+          adminTasks = tasksSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            assignedUserData: users[doc.data().assignedTo] || { email: 'Unassigned' }
+          }));
+          
+          // Load team members for filter
+          loadAdminFilters(users);
+          
+          // Apply current filters
+          applyAdminFilters();
+          
+          document.getElementById('tableLoading').style.display = 'none';
+          
+        } catch (error) {
+          console.error('Error loading admin tasks:', error);
+          document.getElementById('tableLoading').style.display = 'none';
+          alert('Error loading tasks. Please try again.');
+        }
+      }
+
+      // Load filter options
+      function loadAdminFilters(users) {
+        const personFilter = document.getElementById('adminPersonFilter');
+        personFilter.innerHTML = '<option value="">All Members</option>';
+        
+        Object.entries(users).forEach(([id, user]) => {
+          const option = document.createElement('option');
+          option.value = id;
+          option.textContent = user.email;
+          personFilter.appendChild(option);
+        });
+      }
+
+      // Apply all filters
+      function applyAdminFilters() {
+        const searchTerm = document.getElementById('adminSearchInput').value.toLowerCase();
+        const personFilter = document.getElementById('adminPersonFilter').value;
+        const statusFilter = document.getElementById('adminStatusFilter').value;
+        const priorityFilter = document.getElementById('adminPriorityFilter').value;
+        const dateFilter = document.getElementById('adminDateFilter').value;
+        
+        filteredTasks = adminTasks.filter(task => {
+          // Search filter
+          if (searchTerm && !task.title.toLowerCase().includes(searchTerm) && 
+              !task.desc.toLowerCase().includes(searchTerm)) {
+            return false;
+          }
+          
+          // Person filter
+          if (personFilter && task.assignedTo !== personFilter) {
+            return false;
+          }
+          
+          // Status filter
+          if (statusFilter && task.status !== statusFilter) {
+            return false;
+          }
+          
+          // Priority filter
+          if (priorityFilter && task.priority !== priorityFilter) {
+            return false;
+          }
+          
+          // Date filter
+          if (dateFilter && task.createdAt) {
+            const taskDate = task.createdAt.toDate();
+            const now = new Date();
+            
+            switch (dateFilter) {
+              case 'today':
+                if (taskDate.toDateString() !== now.toDateString()) return false;
+                break;
+              case 'week':
+                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                if (taskDate < weekAgo) return false;
+                break;
+              case 'month':
+                const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                if (taskDate < monthAgo) return false;
+                break;
+              case 'custom':
+                const fromDate = document.getElementById('adminFromDate').value;
+                const toDate = document.getElementById('adminToDate').value;
+                if (fromDate && taskDate < new Date(fromDate)) return false;
+                if (toDate && taskDate > new Date(toDate + 'T23:59:59')) return false;
+                break;
+            }
+          }
+          
+          return true;
+        });
+        
+        // Apply sorting
+        sortAdminTasks();
+        renderAdminTable();
+        updateAdminStats();
+      }
+
+      // Sort tasks
+      function sortAdminTasks() {
+        filteredTasks.sort((a, b) => {
+          let aVal = a[currentSort.field];
+          let bVal = b[currentSort.field];
+          
+          // Handle special cases
+          if (currentSort.field === 'assignedTo') {
+            aVal = a.assignedUserData.email;
+            bVal = b.assignedUserData.email;
+          } else if (currentSort.field === 'createdAt' || currentSort.field === 'deadline') {
+            aVal = aVal ? aVal.toDate() : new Date(0);
+            bVal = bVal ? bVal.toDate() : new Date(0);
+          }
+          
+          if (aVal < bVal) return currentSort.order === 'asc' ? -1 : 1;
+          if (aVal > bVal) return currentSort.order === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      // Render admin table
+      function renderAdminTable() {
+        const tbody = document.getElementById('adminTaskTableBody');
+        tbody.innerHTML = '';
+        
+        if (filteredTasks.length === 0) {
+          document.getElementById('tableEmpty').style.display = 'block';
+          document.getElementById('resultsCount').textContent = 'No tasks found';
+          return;
+        }
+        
+        document.getElementById('tableEmpty').style.display = 'none';
+        document.getElementById('resultsCount').textContent = `${filteredTasks.length} tasks found`;
+        
+        filteredTasks.forEach(task => {
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-gray-50';
+          
+          const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'completed';
+          const rowClass = isOverdue ? 'bg-red-50' : '';
+          if (rowClass) row.classList.add('bg-red-50');
+          
+          row.innerHTML = `
+            <td class="px-4 py-4">
+              <input type="checkbox" class="task-checkbox rounded" data-task-id="${task.id}" ${selectedTasks.has(task.id) ? 'checked' : ''}>
+            </td>
+            <td class="px-4 py-4">
+              <div class="max-w-xs">
+                <div class="font-medium text-gray-900 truncate">${task.title}</div>
+                <div class="text-sm text-gray-500 truncate">${task.desc || 'No description'}</div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <span class="text-xs font-medium text-indigo-600">${task.assignedUserData.email.charAt(0).toUpperCase()}</span>
+                </div>
+                <span class="text-sm text-gray-900">${task.assignedUserData.email}</span>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}">${task.status}</span>
+            </td>
+            <td class="px-4 py-4">
+              ${(task.priority && task.priority.trim()) ? `<span class="px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}">${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>` : `<span class="px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor('medium')}">Medium</span>`}
+            </td>
+            <td class="px-4 py-4">
+              <span class="text-sm text-gray-900">${task.createdAt ? task.createdAt.toDate().toLocaleDateString() : '-'}</span>
+            </td>
+            <td class="px-4 py-4">
+              <span class="text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-900'}">${task.deadline ? new Date(task.deadline).toLocaleDateString() : '-'}</span>
+              ${isOverdue ? '<div class="text-xs text-red-500">Overdue!</div>' : ''}
+            </td>
+            <td class="px-4 py-4">
+              <span class="text-sm text-gray-900 font-mono">${formatTimeDisplay(task.totalTime || 0)}</span>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-2">
+                <button onclick="openTaskDetailsModal('${task.id}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="openReassignModal('${task.id}')" class="text-green-600 hover:text-green-800 text-sm">
+                  <i class="fas fa-user-edit"></i>
+                </button>
+                <button onclick="deleteTaskFromAdmin('${task.id}')" class="text-red-600 hover:text-red-800 text-sm">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          `;
+          
+          tbody.appendChild(row);
+        });
+        
+        // Update checkbox listeners
+        updateCheckboxListeners();
+      }
+
+      // Get status color classes
+      function getStatusColor(status) {
+        const colors = {
+          'active': 'bg-blue-100 text-blue-700',
+          'in-progress': 'bg-yellow-100 text-yellow-700',
+          'completed': 'bg-green-100 text-green-700',
+          'pending': 'bg-gray-100 text-gray-700'
+        };
+        return colors[status] || 'bg-gray-100 text-gray-700';
+      }
+
+      // Update admin statistics
+      function updateAdminStats() {
+        const totalTasks = filteredTasks.length;
+        const completedTasks = filteredTasks.filter(t => t.status === 'completed').length;
+        const overdueTasks = filteredTasks.filter(t => {
+          return t.deadline && new Date(t.deadline) < new Date() && t.status !== 'completed';
+        }).length;
+        const totalTime = filteredTasks.reduce((sum, t) => sum + (t.totalTime || 0), 0);
+        
+        document.getElementById('adminTotalTasks').textContent = totalTasks;
+        document.getElementById('adminCompletedTasks').textContent = completedTasks;
+        document.getElementById('adminOverdueTasks').textContent = overdueTasks;
+        document.getElementById('adminTotalTime').textContent = formatTimeDisplay(totalTime);
+      }
+
+      // Update checkbox listeners
+      function updateCheckboxListeners() {
+        // Select all checkbox
+        document.getElementById('selectAll').onchange = function() {
+          const checkboxes = document.querySelectorAll('.task-checkbox');
+          checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+            if (this.checked) {
+              selectedTasks.add(cb.dataset.taskId);
+            } else {
+              selectedTasks.delete(cb.dataset.taskId);
+            }
+          });
+          updateBulkActionsPanel();
+        };
+        
+        // Individual checkboxes
+        document.querySelectorAll('.task-checkbox').forEach(cb => {
+          cb.onchange = function() {
+            if (this.checked) {
+              selectedTasks.add(this.dataset.taskId);
+            } else {
+              selectedTasks.delete(this.dataset.taskId);
+            }
+            updateBulkActionsPanel();
+          };
+        });
+      }
+
+      // Update bulk actions panel
+      function updateBulkActionsPanel() {
+        const panel = document.getElementById('bulkActionsPanel');
+        const count = selectedTasks.size;
+        
+        if (count > 0) {
+          panel.classList.remove('hidden');
+          document.getElementById('selectedCount').textContent = `${count} task${count > 1 ? 's' : ''} selected`;
+        } else {
+          panel.classList.add('hidden');
+        }
+      }
+
+      // Export functionality
+      function exportTasksToCSV(tasks, filename = 'tasks.csv') {
+        const headers = ['Title', 'Description', 'Assigned To', 'Status', 'Priority', 'Created Date', 'Due Date', 'Time Spent'];
+        
+        const csvContent = [
+          headers.join(','),
+          ...tasks.map(task => [
+            `"${task.title || ''}"`,
+            `"${task.desc || ''}"`,
+            `"${task.assignedUserData.email || ''}"`,
+            `"${task.status || ''}"`,
+            `"${task.priority || ''}"`,
+            `"${task.createdAt ? task.createdAt.toDate().toLocaleDateString() : ''}"`,
+            `"${task.deadline ? new Date(task.deadline).toLocaleDateString() : ''}"`,
+            `"${formatTimeDisplay(task.totalTime || 0)}"`
+          ].join(','))
+        ].join('\\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+
+      // Modal functions
+      window.openTaskDetailsModal = function(taskId) {
+        const task = adminTasks.find(t => t.id === taskId);
+        if (task) {
+          alert(`Task Details:\\n\\nTitle: ${task.title}\\nDescription: ${task.desc || 'No description'}\\nStatus: ${task.status}\\nPriority: ${task.priority || 'Not set'}\\nTime Spent: ${formatTimeDisplay(task.totalTime || 0)}`);
+        }
+      };
+
+      window.openReassignModal = function(taskId) {
+        const newAssignee = document.getElementById('adminPersonFilter').value;
+        if (newAssignee && confirm('Reassign this task to the selected team member?')) {
+          db.collection('tasks').doc(taskId).update({ assignedTo: newAssignee })
+            .then(() => {
+              loadAdminTasks();
+              alert('Task reassigned successfully!');
+            })
+            .catch(error => {
+              console.error('Error reassigning task:', error);
+              alert('Error reassigning task. Please try again.');
+            });
+        } else {
+          alert('Please select a team member from the filter dropdown first.');
+        }
+      };
+
+      window.deleteTaskFromAdmin = function(taskId) {
+        if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+          db.collection('tasks').doc(taskId).delete()
+            .then(() => {
+              loadAdminTasks();
+              alert('Task deleted successfully!');
+            })
+            .catch(error => {
+              console.error('Error deleting task:', error);
+              alert('Error deleting task. Please try again.');
+            });
+        }
+      };
+
+      // Event listeners for admin module
+      document.addEventListener('DOMContentLoaded', function() {
+        // Filter events
+        document.getElementById('adminSearchInput').addEventListener('input', applyAdminFilters);
+        document.getElementById('adminPersonFilter').addEventListener('change', applyAdminFilters);
+        document.getElementById('adminStatusFilter').addEventListener('change', applyAdminFilters);
+        document.getElementById('adminPriorityFilter').addEventListener('change', applyAdminFilters);
+        document.getElementById('adminDateFilter').addEventListener('change', function() {
+          if (this.value === 'custom') {
+            document.getElementById('customDateRange').classList.remove('hidden');
+          } else {
+            document.getElementById('customDateRange').classList.add('hidden');
+          }
+          applyAdminFilters();
+        });
+        
+        document.getElementById('adminFromDate').addEventListener('change', applyAdminFilters);
+        document.getElementById('adminToDate').addEventListener('change', applyAdminFilters);
+        
+        // Button events
+        document.getElementById('applyFilters').addEventListener('click', applyAdminFilters);
+        document.getElementById('clearFilters').addEventListener('click', function() {
+          document.getElementById('adminSearchInput').value = '';
+          document.getElementById('adminPersonFilter').value = '';
+          document.getElementById('adminStatusFilter').value = '';
+          document.getElementById('adminPriorityFilter').value = '';
+          document.getElementById('adminDateFilter').value = '';
+          document.getElementById('adminFromDate').value = '';
+          document.getElementById('adminToDate').value = '';
+          document.getElementById('customDateRange').classList.add('hidden');
+          selectedTasks.clear();
+          applyAdminFilters();
+        });
+        
+        document.getElementById('refreshTasks').addEventListener('click', loadAdminTasks);
+        document.getElementById('exportAll').addEventListener('click', function() {
+          exportTasksToCSV(filteredTasks, 'all_tasks.csv');
+        });
+        document.getElementById('exportSelected').addEventListener('click', function() {
+          const selected = filteredTasks.filter(t => selectedTasks.has(t.id));
+          if (selected.length > 0) {
+            exportTasksToCSV(selected, 'selected_tasks.csv');
+          } else {
+            alert('No tasks selected for export.');
+          }
+        });
+        
+        // Bulk actions
+        document.getElementById('bulkStatusChange').addEventListener('change', function() {
+          if (this.value && selectedTasks.size > 0) {
+            if (confirm(`Change status of ${selectedTasks.size} selected task(s) to "${this.value}"?`)) {
+              const promises = Array.from(selectedTasks).map(taskId =>
+                db.collection('tasks').doc(taskId).update({ status: this.value })
+              );
+              
+              Promise.all(promises)
+                .then(() => {
+                  selectedTasks.clear();
+                  loadAdminTasks();
+                  alert('Tasks updated successfully!');
+                })
+                .catch(error => {
+                  console.error('Error updating tasks:', error);
+                  alert('Error updating tasks. Please try again.');
+                });
+            }
+            this.value = '';
+          }
+        });
+        
+        document.getElementById('deleteSelected').addEventListener('click', function() {
+          if (selectedTasks.size > 0 && confirm(`Delete ${selectedTasks.size} selected task(s)? This action cannot be undone.`)) {
+            const promises = Array.from(selectedTasks).map(taskId =>
+              db.collection('tasks').doc(taskId).delete()
+            );
+            
+            Promise.all(promises)
+              .then(() => {
+                selectedTasks.clear();
+                loadAdminTasks();
+                alert('Tasks deleted successfully!');
+              })
+              .catch(error => {
+                console.error('Error deleting tasks:', error);
+                alert('Error deleting tasks. Please try again.');
+              });
+          }
+        });
+        
+        // Table sorting
+        document.querySelectorAll('[data-sort]').forEach(th => {
+          th.addEventListener('click', function() {
+            const field = this.dataset.sort;
+            if (currentSort.field === field) {
+              currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+              currentSort.field = field;
+              currentSort.order = 'asc';
+            }
+            
+            // Update sort icons
+            document.querySelectorAll('[data-sort] i').forEach(icon => {
+              icon.className = 'fas fa-sort ml-1 text-gray-400';
+            });
+            this.querySelector('i').className = `fas fa-sort-${currentSort.order === 'asc' ? 'up' : 'down'} ml-1 text-blue-600`;
+            
+            applyAdminFilters();
+          });
+        });
+      });
+    </script>
+  </div>
+
+  <!-- Status Update Modal -->
+  <div id="statusModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-md p-8 m-4 border border-white/20 text-center transform transition-all duration-300">
+      <div class="mb-6">
+        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-edit text-white text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">Update Task Status</h3>
+        <p class="text-gray-600 text-sm">Select the new status for this task</p>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <button class="status-btn px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-[1.02]" data-status="active" onclick="updateTaskStatusDirect('active')">
+          <i class="fas fa-play-circle mb-1"></i><br>
+          Active
+        </button>
+        <button class="status-btn px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-[1.02]" data-status="in-progress" onclick="updateTaskStatusDirect('in-progress')">
+          <i class="fas fa-clock mb-1"></i><br>
+          In Progress
+        </button>
+        <button class="status-btn px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-[1.02]" data-status="completed" onclick="updateTaskStatusDirect('completed')">
+          <i class="fas fa-check-circle mb-1"></i><br>
+          Completed
+        </button>
+        <button class="status-btn px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-[1.02]" data-status="pending" onclick="updateTaskStatusDirect('pending')">
+          <i class="fas fa-pause-circle mb-1"></i><br>
+          Pending
+        </button>
+      </div>
+      
+      <button class="w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-medium transition-all duration-200" onclick="document.getElementById('statusModal').classList.add('hidden')">
+        Cancel
+      </button>
+    </div>
+  </div>
+  
+  <!-- Custom JavaScript Files -->
+  <script src="js/firebase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/projects.js"></script>
+  <script src="js/timer.js"></script>
+</body>
+</html>

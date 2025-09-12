@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login | Digital Agency Project Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="js/firebase.js"></script>
+  <script src="js/auth.js"></script>
+  <style>
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+    .fade-in-up {
+      animation: fadeInUp 0.6s ease-out;
+    }
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .floating-shape {
+      position: absolute;
+      border-radius: 50%;
+      background: linear-gradient(45deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
+  <!-- Floating Background Elements -->
+  <div class="floating-shape w-64 h-64 top-10 left-10 opacity-30"></div>
+  <div class="floating-shape w-96 h-96 top-32 right-20 opacity-20" style="animation-delay: -2s;"></div>
+  <div class="floating-shape w-48 h-48 bottom-20 left-1/3 opacity-25" style="animation-delay: -4s;"></div>
+  
+  <div class="relative z-10 min-h-screen flex items-center justify-center p-4">
+    <!-- Main Container -->
+    <div class="glass-effect rounded-3xl shadow-2xl w-full max-w-6xl p-8 md:p-12 fade-in-up">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-6 pulse-animation">
+          <i class="fas fa-rocket text-white text-2xl"></i>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+          Digital Agency PM
+        </h1>
+        <p class="text-gray-600 text-lg">Streamline your projects, empower your team</p>
+      </div>
+
+      <!-- Auth Container -->
+      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <!-- Login Form -->
+        <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-sign-in-alt text-indigo-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-indigo-700">Welcome Back</h2>
+          </div>
+          
+          <form id="loginForm" class="space-y-6">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-envelope text-gray-400"></i>
+              </div>
+              <input 
+                type="email" 
+                id="email" 
+                placeholder="Enter your email" 
+                required 
+                class="w-full pl-12 pr-4 py-4 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-lock text-gray-400"></i>
+              </div>
+              <input 
+                type="password" 
+                id="password" 
+                placeholder="Enter your password" 
+                required 
+                class="w-full pl-12 pr-4 py-4 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <button 
+              type="submit" 
+              class="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+            >
+              <i class="fas fa-sign-in-alt mr-2"></i>
+              Sign In
+            </button>
+          </form>
+        </div>
+
+        <!-- Register Form -->
+        <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-user-plus text-purple-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-purple-700">Join Our Team</h2>
+          </div>
+          
+          <form id="registerForm" class="space-y-6">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-envelope text-gray-400"></i>
+              </div>
+              <input 
+                type="email" 
+                id="regEmail" 
+                placeholder="Enter your email" 
+                required 
+                class="w-full pl-12 pr-4 py-4 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-lock text-gray-400"></i>
+              </div>
+              <input 
+                type="password" 
+                id="regPassword" 
+                placeholder="Create a password" 
+                required 
+                class="w-full pl-12 pr-4 py-4 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200" 
+              />
+            </div>
+            
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-user-tag text-gray-400"></i>
+              </div>
+              <select 
+                id="role" 
+                class="w-full pl-12 pr-4 py-4 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200 appearance-none"
+              >
+                <option value="member">Team Member</option>
+                <option value="admin">Administrator</option>
+              </select>
+              <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-400"></i>
+              </div>
+            </div>
+            
+            <button 
+              type="submit" 
+              class="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
+            >
+              <i class="fas fa-user-plus mr-2"></i>
+              Create Account
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="text-center mt-12">
+        <p class="text-gray-500">
+          <i class="fas fa-shield-alt mr-1"></i>
+          Secure • Reliable • Modern
+        </p>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const user = await login(email, password);
+      if (user) window.location.href = "dashboard.html";
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const role = document.getElementById('role').value;
+      const user = await register(email, password, role);
+      if (user) window.location.href = "dashboard.html";
+    });
+  </script>
+</body>
+</html>
