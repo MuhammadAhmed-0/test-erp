@@ -1,7 +1,7 @@
-let timerInterval = null;
-let timerStart = null;
-let timerTaskId = null;
-let timerElapsed = 0;
+var timerInterval = null;
+var timerStart = null;
+var timerTaskId = null;
+var timerElapsed = 0;
 
 window.openTimerModal = async function(taskId, taskTitle) {
   timerTaskId = taskId;

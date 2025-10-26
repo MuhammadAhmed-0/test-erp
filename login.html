@@ -161,13 +161,16 @@
               <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <i class="fas fa-user-tag text-gray-400"></i>
               </div>
-              <input 
-                type="text" 
-                value="Team Member" 
-                readonly 
-                class="w-full pl-12 pr-4 py-4 bg-gray-100 border border-gray-200 rounded-xl text-gray-600 cursor-not-allowed"
-              />
-              <input type="hidden" id="role" value="member" />
+              <select 
+                id="role" 
+                class="w-full pl-12 pr-4 py-4 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all duration-200 appearance-none"
+              >
+                <option value="member">Team Member</option>
+                <option value="admin">Administrator</option>
+              </select>
+              <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-400"></i>
+              </div>
             </div>
             
             <button 
@@ -191,46 +194,21 @@
     </div>
   </div>
   <script>
-    // Role-based routing after login
-    async function redirectToDashboard(user) {
-      try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userInfo = userDoc.data();
-        
-        if (userInfo.role === 'admin') {
-          window.location.href = "dashboard.html";
-        } else if (userInfo.role === 'member') {
-          window.location.href = "member_dashboard.html";
-        } else {
-          alert('Unknown user role. Please contact administrator.');
-          auth.signOut();
-        }
-      } catch (error) {
-        console.error('Error getting user role:', error);
-        alert('Error logging in. Please try again.');
-        auth.signOut();
-      }
-    }
-
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       const user = await login(email, password);
-      if (user) {
-        await redirectToDashboard(user);
-      }
+      if (user) window.location.href = "index.html";
     });
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('regEmail').value;
       const password = document.getElementById('regPassword').value;
-      // Role is now hardcoded as 'member' in the register function for security
-      const user = await register(email, password);
-      if (user) {
-        await redirectToDashboard(user);
-      }
+      const role = document.getElementById('role').value;
+      const user = await register(email, password, role);
+      if (user) window.location.href = "index.html";
     });
   </script>
 </body>

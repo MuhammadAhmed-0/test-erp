@@ -1,11 +1,10 @@
-async function register(email, password) {
+async function register(email, password, role) {
   try {
     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
     const user = userCredential.user;
-    // Security: All new users are hardcoded as members. Admin elevation must be done by existing admin.
     await db.collection('users').doc(user.uid).set({
       email,
-      role: 'member', // Hardcoded - cannot be overridden by client
+      role,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     return user;

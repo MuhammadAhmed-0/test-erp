@@ -1,12 +1,12 @@
-const projectModal = document.getElementById('projectModal');
-const addProjectBtn = document.getElementById('addProjectBtn');
-const closeProjectModal = document.getElementById('closeProjectModal');
-const projectForm = document.getElementById('projectForm');
+var projectModal = document.getElementById('projectModal');
+var addProjectBtn = document.getElementById('addProjectBtn');
+var closeProjectModal = document.getElementById('closeProjectModal');
+var projectForm = document.getElementById('projectForm');
 
-const taskModal = document.getElementById('taskModal');
-const addTaskBtn = document.getElementById('addTaskBtn');
-const closeTaskModal = document.getElementById('closeTaskModal');
-const taskForm = document.getElementById('taskForm');
+var taskModal = document.getElementById('taskModal');
+var addTaskBtn = document.getElementById('addTaskBtn');
+var closeTaskModal = document.getElementById('closeTaskModal');
+var taskForm = document.getElementById('taskForm');
 
 addProjectBtn.onclick = () => { projectModal.classList.remove('hidden'); };
 closeProjectModal.onclick = () => { projectModal.classList.add('hidden'); };

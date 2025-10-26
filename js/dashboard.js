@@ -1,8 +1,8 @@
-let currentUser = null;
-let currentUserRole = null;
-let allTasks = [];
-let filteredTasks = [];
-let selectedTaskIds = new Set();
+var currentUser = null;
+var currentUserRole = null;
+var allTasks = [];
+var filteredTasks = [];
+var selectedTaskIds = new Set();
 
 function onAuthStateChanged(callback) {
   auth.onAuthStateChanged(callback);
@@ -18,19 +18,6 @@ onAuthStateChanged(async (user) => {
   const userDoc = await db.collection('users').doc(user.uid).get();
   const userInfo = userDoc.data();
   currentUserRole = userInfo.role;
-  
-  // Role-based access control - redirect members to member dashboard
-  if (userInfo.role === 'member') {
-    window.location.href = "member_dashboard.html";
-    return;
-  }
-  
-  // Only allow admins access to this dashboard
-  if (userInfo.role !== 'admin') {
-    alert('Access denied. Admins only.');
-    auth.signOut();
-    return;
-  }
   
   document.getElementById('welcome').innerText = `Welcome, ${userInfo.role}: ${userInfo.email}`;
   document.getElementById('logoutBtn').onclick = () => auth.signOut();
@@ -126,6 +113,18 @@ function initializeNavigation() {
     setActiveNav('navAnalytics');
   });
 
+  const navDailyReport = document.getElementById('navDailyReport');
+  if (navDailyReport) {
+    navDailyReport.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('Daily Report clicked');
+      showSection('dailyReport');
+      setActiveNav('navDailyReport');
+    });
+  } else {
+    console.error('navDailyReport element not found');
+  }
+
   // Admin navigation (only for admin users)
   const navAdmin = document.getElementById('navAdmin');
   if (navAdmin && !navAdmin.classList.contains('hidden')) {
@@ -141,7 +140,7 @@ function initializeNavigation() {
 
 function showSection(sectionName) {
   // Hide all sections
-  const sections = ['dashboardSection', 'projectsSection', 'tasksSection', 'analyticsSection', 'adminSection'];
+  const sections = ['dashboardSection', 'projectsSection', 'tasksSection', 'analyticsSection', 'adminSection', 'dailyReportSection'];
   sections.forEach(section => {
     const element = document.getElementById(section);
     if (element) {
@@ -169,6 +168,17 @@ function showSection(sectionName) {
     case 'admin':
       if (currentUserRole === 'admin') {
         loadAdminData();
+      }
+      break;
+    case 'dailyReport':
+      try {
+        if (typeof initializeDailyReports === 'function') {
+          initializeDailyReports();
+        } else {
+          console.error('initializeDailyReports function not found');
+        }
+      } catch (error) {
+        console.error('Error initializing Daily Reports:', error);
       }
       break;
     case 'dashboard':
@@ -796,7 +806,7 @@ function exportTasks(taskIds = null) {
 }
 
 // Table Sorting Functions
-let currentSort = { field: null, direction: 'asc' };
+var currentSort = { field: null, direction: 'asc' };
 
 function sortTasks(field) {
   if (currentSort.field === field) {
