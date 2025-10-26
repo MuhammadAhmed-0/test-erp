@@ -1,8 +1,5 @@
-var currentUser = null;
-var currentUserRole = null;
-var allTasks = [];
-var filteredTasks = [];
-var selectedTaskIds = new Set();
+// Note: currentUser, currentUserRole, and other global vars are defined in index.html inline scripts
+// to avoid duplicate declarations
 
 function onAuthStateChanged(callback) {
   auth.onAuthStateChanged(callback);

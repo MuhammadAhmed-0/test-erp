@@ -1167,6 +1167,10 @@
       const auth = firebase.auth();
       const db = firebase.firestore();
       
+      // Global variables needed by reports.js and other modules
+      var currentUser = null;
+      var currentUserRole = null;
+      
       // Global time formatting function
       function formatTimeDisplay(seconds) {
         const hours = Math.floor(seconds / 3600);
@@ -1182,7 +1186,7 @@
         document.getElementById('tasksSection').style.display = sectionId === 'tasksSection' ? 'block' : 'none';
         document.getElementById('analyticsSection').style.display = sectionId === 'analyticsSection' ? 'block' : 'none';
         document.getElementById('adminSection').style.display = sectionId === 'adminSection' ? 'block' : 'none';
-	document.getElementById('dailyReportSection').style.display = sectionId === 'dailyReportSection' ? 'block' : 'none';
+        document.getElementById('dailyReportSection').style.display = sectionId === 'dailyReportSection' ? 'block' : 'none';
         
         // Update navigation active states
         document.querySelectorAll('.nav-item').forEach(a => a.classList.remove("sidebar-active"));
@@ -1191,11 +1195,18 @@
         if (sectionId === "tasksSection") document.getElementById("navTasks").classList.add("sidebar-active");
         if (sectionId === "analyticsSection") document.getElementById("navAnalytics").classList.add("sidebar-active");
         if (sectionId === "adminSection") document.getElementById("navAdmin").classList.add("sidebar-active");
-	if (sectionId === "dailyReportSection") document.getElementById("navDailyReport").classList.add("sidebar-active");
+        if (sectionId === "dailyReportSection") document.getElementById("navDailyReport").classList.add("sidebar-active");
         
         // Load admin data when admin section is shown
         if (sectionId === "adminSection") {
           loadAdminTasks();
+        }
+        
+        // Initialize Daily Reports when daily report section is shown
+        if (sectionId === "dailyReportSection") {
+          if (typeof initializeDailyReports === 'function') {
+            initializeDailyReports();
+          }
         }
       }
       document.getElementById("navDashboard").onclick = e => { e.preventDefault(); showSection("dashboardSection"); };
@@ -1210,6 +1221,10 @@
         if (!user) { window.location.href = "login.html"; return; }
         const userDoc = await db.collection('users').doc(user.uid).get();
         const userInfo = userDoc.data();
+        
+        // Set global variables for use in other modules
+        currentUser = user;
+        currentUserRole = userInfo.role;
         
         // Update header welcome message
         document.getElementById('welcome').innerHTML = `
@@ -2347,8 +2362,9 @@
   <!-- Custom JavaScript Files -->
   <script src="js/firebase.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/projects.js"></script>
+  <!-- dashboard.js and projects.js commented out to avoid duplicate variable declarations -->
+  <!-- <script src="js/dashboard.js"></script> -->
+  <!-- <script src="js/projects.js"></script> -->
   <script src="js/timer.js"></script>
   <script src="js/reports.js"></script>
 </body>

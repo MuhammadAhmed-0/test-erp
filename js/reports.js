@@ -209,7 +209,7 @@ function switchTab(tab) {
     submitSection.style.display = 'none';
     viewSection.style.display = 'block';
     
-    loadAllReports();
+    loadAllReportsLive();
   }
 }
 
@@ -233,26 +233,32 @@ async function loadAllTeamMembers() {
   }
 }
 
-async function loadAllReports() {
-  try {
-    const snapshot = await db.collection('dailyReports')
-      .orderBy('date', 'desc')
-      .get();
-    
-    allReports = [];
-    snapshot.forEach(doc => {
-      allReports.push({
-        id: doc.id,
-        ...doc.data(),
-        submittedAt: doc.data().submittedAt?.toDate() || new Date()
+// 🔄 Real-time listener for all reports (admin view)
+let reportsUnsubscribe = null;
+
+function loadAllReportsLive() {
+  // If listener already active, stop it before creating a new one
+  if (reportsUnsubscribe) reportsUnsubscribe();
+
+  reportsUnsubscribe = db.collection('dailyReports')
+    .orderBy('date', 'desc')
+    .onSnapshot(snapshot => {
+      allReports = [];
+      snapshot.forEach(doc => {
+        allReports.push({
+          id: doc.id,
+          ...doc.data(),
+          submittedAt: doc.data().submittedAt?.toDate() || new Date()
+        });
       });
+
+      console.log("[reports] Live reports loaded:", allReports.length);
+      applyReportFilters(); // refresh table/list automatically
+    }, error => {
+      console.error("Live reports listener error:", error);
     });
-    
-    applyReportFilters();
-  } catch (error) {
-    console.error('Error loading reports:', error);
-  }
 }
+
 
 function handleDateFilterChange() {
   const dateFilter = document.getElementById('reportDateFilter').value;
@@ -298,8 +304,15 @@ function applyReportDateFilter(report, dateFilter) {
   
   switch (dateFilter) {
     case 'today':
-      const todayStr = new Date().toISOString().split('T')[0];
-      return report.date === todayStr;
+      // Compare by local date instead of UTC
+      const localToday = new Date();
+      localToday.setHours(0, 0, 0, 0);
+
+      const reportDay = new Date(report.date);
+      reportDay.setHours(0, 0, 0, 0);
+
+      return reportDay.getTime() === localToday.getTime();
+
     
     case 'yesterday':
       const yesterday = new Date(today);
@@ -502,10 +515,3 @@ function formatTimestamp(timestamp) {
 }
 
 window.removeResource = removeResource;
-
-
-console.log("[reports-debug] reports.js loaded");
-
-function initializeDailyReports() {
-  console.log("[reports] initializeDailyReports called ...");
-}
